@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Online booking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<main class="app">
+<section class="hero"><img id="logo" hidden><div class="eyebrow">ONLINE BOOKING</div><h1 id="salonName">Booking</h1><p>Запис за кілька хвилин</p></section>
+<section id="clientView">
+<div class="card"><span class="label">КРОК 1</span><h2>Оберіть послугу</h2><div id="services" class="service-list"></div></div>
+<div id="dateCard" class="card hidden"><span class="label">КРОК 2</span><h2>Оберіть дату</h2><div id="dates" class="dates"></div></div>
+<div id="slotCard" class="card hidden"><span class="label">КРОК 3</span><h2>Оберіть час</h2><div id="slots" class="slots"></div></div>
+<div id="formCard" class="card hidden"><span class="label">КРОК 4</span><h2>Ваші дані</h2><label>Ім'я</label><input id="name" autocomplete="name"><label>Телефон</label><input id="phone" type="tel" autocomplete="tel"><label>Коментар</label><textarea id="comment"></textarea><button id="book" class="primary">Підтвердити запис</button></div>
+<div id="result" class="card hidden"></div>
+<div class="card"><button id="mine" class="secondary">📋 Мої записи</button></div>
+</section>
+<section id="adminView" class="hidden">
+<div class="card admin-head"><div><span class="label">КАБІНЕТ МАЙСТРА</span><h2>Календар</h2></div><button id="refresh" class="round">↻</button></div>
+<div class="card"><label>Дата</label><input id="adminDate" type="date"></div>
+<div id="adminCalendar" class="card timeline"></div>
+<div class="card"><h2>🔒 Заблокувати час</h2><div class="two"><input id="blockStart" type="time"><input id="blockEnd" type="time"></div><input id="blockReason" placeholder="Обід / особисте / інше"><button id="block" class="secondary">Заблокувати</button></div>
+<div class="card"><h2>➕ Ручний запис</h2><input id="manualName" placeholder="Ім'я"><input id="manualPhone" placeholder="Телефон"><select id="manualService"></select><input id="manualStart" type="time"><button id="manual" class="primary">Додати запис</button></div>
+</section>
+<div id="toast" class="toast"></div>
+</main>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="./app.js"></script>
+</body></html>
