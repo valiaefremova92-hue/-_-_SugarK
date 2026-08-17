@@ -1,6 +1,6 @@
 const tg=window.Telegram?.WebApp;const state={initData:tg?.initData||"",user:null,settings:null,services:[],service:null,date:null,start:null};const $=id=>document.getElementById(id);
 function msg(s){const e=$("toast");e.textContent=s;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),2500)}
-async function api(action,data={}){const r=await fetch("/api/booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,initData:state.initData,...data})});const j=await r.json();if(!j.ok)throw Error(j.error||"Помилка");return j}
+async function api(action,data={}){const r=await fetch("/.netlify/functions/booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,initData:state.initData,...data})});const j=await r.json();if(!j.ok)throw Error(j.error||"Помилка");return j}
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;", "'":"&#039;"}[c]))}
 function apply(s){for(const[k,v]of Object.entries(s.colors||{}))document.documentElement.style.setProperty(`--${k}`,v);$("salonName").textContent=s.salonName||"Booking";if(s.logoUrl){$("logo").src=s.logoUrl;$("logo").hidden=false}}
 function iso(d){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
