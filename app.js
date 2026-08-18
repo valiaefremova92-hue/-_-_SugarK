@@ -5,7 +5,7 @@
 */
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbxs6YV70oL8YYZKlctlIDbJDyGUmplT5gEfmjpeaIAARL7UfhI2zPCCTZb2VY-JU24E/exec';
-async function apiPost(...)
+
 const DEFAULT_SETTINGS = {
   salonName: 'Sugar Katerina',
   logoUrl: '',
@@ -84,42 +84,26 @@ async function init() {
 
       state.initData = state.tg.initData || '';
 
-      console.log(
-        'TELEGRAM INIT DATA:',
-        state.initData
-      );
+      console.log('TELEGRAM INIT DATA:', state.initData);
 
-      state.user =
-        state.tg.initDataUnsafe?.user || null;
+      state.user = state.tg.initDataUnsafe?.user || null;
 
-      console.log(
-        'TELEGRAM USER:',
-        state.user
-      );
+      console.log('TELEGRAM USER:', state.user);
     } else {
-      console.error(
-        'Telegram WebApp не знайдений'
-      );
+      console.error('Telegram WebApp не знайдений');
     }
 
     bindEvents();
 
-    const data = await apiPost(
-      'bootstrap',
-      {
-        initData: state.initData
-      }
-    );
+    const data = await apiPost('bootstrap', {
+      initData: state.initData
+    });
 
-    console.log(
-      'BOOTSTRAP RESPONSE:',
-      data
-    );
+    console.log('BOOTSTRAP RESPONSE:', data);
 
     if (!data || data.ok === false) {
       throw new Error(
-        data?.error ||
-        'Backend не повернув дані.'
+        data?.error || 'Backend не повернув дані.'
       );
     }
 
@@ -133,10 +117,7 @@ async function init() {
     }
 
   } catch (err) {
-    console.error(
-      'INIT ERROR:',
-      err
-    );
+    console.error('INIT ERROR:', err);
 
     showError(
       err.message ||
@@ -144,23 +125,6 @@ async function init() {
     );
   }
 }
-
-    bindEvents();
-
-    const data = await apiPost('bootstrap', { initData: state.initData });
-    applyBootstrap(data);
-
-    renderServices();
-    renderCalendar();
-
-    if (state.isMaster) {
-      showAdmin();
-    }
-  } catch (err) {
-    showError(err.message || 'Не вдалося завантажити систему.');
-  }
-}
-
 function applyBootstrap(data) {
   if (!data?.ok) throw new Error(data?.error || 'Помилка завантаження.');
 
