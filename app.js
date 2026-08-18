@@ -508,9 +508,12 @@ async function cancelBooking(id) {
 
 function showAdmin() {
   els.adminView.classList.remove('hidden');
+
   const today = toIsoDate(new Date());
   els.adminDate.value = today;
-  loadAdminCalendar();
+
+  // Не завантажуємо адмінський календар автоматично.
+  // Його можна буде завантажити кнопкою "↻".
 }
 
 async function loadAdminCalendar() {
