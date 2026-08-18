@@ -333,21 +333,180 @@ function selectService(service, btn) {
   // Оновлюємо підсумок
   updateSummary();
 }
+
+
+// 👇 ОСЬ ТУТ ВСТАВЛЯЄМО renderCalendar
+function renderCalendar() {
+  const year = state.currentMonth.getFullYear();
+  const month = state.currentMonth.getMonth();
+
+  els.monthTitle.textContent =
+    state.currentMonth.toLocaleDateString('uk-UA', {
+      month: 'long',
+      year: 'numeric'
+    });
+
+  els.calendar.innerHTML = '';
+
+  console.log('SCHEDULE:', state.schedule);
+
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+
+  const mondayIndex =
+    (firstDay.getDay() + 6) % 7;
+
+  // Порожні клітинки перед 1 числом
+  for (let i = 0; i < mondayIndex; i++) {
+    const empty = document.createElement('button');
+
+    empty.type = 'button';
+    empty.className = 'day-btn day-empty';
+    empty.disabled = true;
+
+    els.calendar.appendChild(empty);
+  }
+
+  // Формуємо доступні дати
+  const availableDates = new Set();
+
+  state.schedule.forEach(item => {
+    const active =
+      item.active === true ||
+      String(item.active).toUpperCase() === 'TRUE';
+
+    if (!active || !item.date) return;
+
+    let date;
+
+    if (typeof item.date === 'string') {
+      const match = item.date.match(
+        /^(\d{4})-(\d{2})-(\d{2})/
+      );
+
+      if (match) {
+        date = new Date(
+          Number(match[1]),
+          Number(match[2]) - 1,
+          Number(match[3])
+        );
+      } else {
+        date = new Date(item.date);
+      }
+    } else {
+      date = new Date(item.date);
+    }
+
+    if (isNaN(date.getTime())) {
+      console.warn(
+        'Невірна дата в Schedule:',
+        item.date
+      );
+      return;
+    }
+
+    const iso =
+      date.getFullYear() +
+      '-' +
+      String(date.getMonth() + 1).padStart(2, '0') +
+      '-' +
+      String(date.getDate()).padStart(2, '0');
+
+    availableDates.add(iso);
+  });
+
+  console.log(
+    'AVAILABLE DATES:',
+    [...availableDates]
+  );
+
+  // Малюємо дні
+  for (
+    let day = 1;
+    day <= lastDay.getDate();
+    day++
+  ) {
+    const date = new Date(year, month, day);
+
+    const iso =
+      year +
+      '-' +
+      String(month + 1).padStart(2, '0') +
+      '-' +
+      String(day).padStart(2, '0');
+
+    const btn = document.createElement('button');
+
+    btn.type = 'button';
+    btn.className = 'day-btn';
+    btn.textContent = day;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const currentDate = new Date(date);
+    currentDate.setHours(0, 0, 0, 0);
+
+    const isAvailable =
+      availableDates.has(iso);
+
+    const isPast =
+      currentDate < today;
+
+    const disabled =
+      isPast ||
+      !isAvailable ||
+      !state.selectedService;
+
+    btn.disabled = disabled;
+
+    if (
+      isAvailable &&
+      !isPast &&
+      state.selectedService
+    ) {
+      btn.classList.add('available');
+    }
+
+    if (state.selectedDate === iso) {
+      btn.classList.add('selected');
+    }
+
+    btn.addEventListener('click', () => {
+      selectDate(iso);
+    });
+
+    els.calendar.appendChild(btn);
+  }
+}
+
+
 function changeMonth(delta) {
   const next = new Date(state.currentMonth);
-  next.setMonth(next.getMonth() + delta);
+
+  next.setMonth(
+    next.getMonth() + delta
+  );
+
   state.currentMonth = next;
+
   renderCalendar();
 }
+
 
 async function selectDate(date) {
   state.selectedDate = date;
   state.selectedTime = null;
+
   renderCalendar();
+
   openStep('time');
 
-  els.slots.innerHTML = '<div class="empty">Завантажую вільний час…</div>';
-  els.timeHint.textContent = 'Перевіряємо графік та записи.';
+  els.slots.innerHTML =
+    '<div class="empty">Завантажую вільний час…</div>';
+
+  els.timeHint.textContent =
+    'Перевіряємо графік та записи.';
 
   try {
     const data = await apiPost('getSlots', {
@@ -356,15 +515,20 @@ async function selectDate(date) {
       serviceId: state.selectedService.id
     });
 
-    if (!data.ok) throw new Error(data.error || 'Не вдалося отримати час.');
+    if (!data.ok) {
+      throw new Error(
+        data.error ||
+        'Не вдалося отримати час.'
+      );
+    }
 
     renderSlots(data.slots || []);
+
   } catch (err) {
     els.slots.innerHTML = '';
     showError(err.message);
   }
 }
-
 function renderSlots(slots) {
   els.slots.innerHTML = '';
 
