@@ -201,13 +201,25 @@ function renderServices() {
     btn.type = 'button';
     btn.className = 'service-btn';
 
+    const serviceName =
+      service.name ||
+      service.title ||
+      service.serviceName ||
+      service.service ||
+      service.label ||
+      service.id ||
+      'Послуга';
+
+    const duration = Number(service.duration || 0);
+    const price = Number(service.price || 0);
+
     btn.innerHTML = `
       <span class="service-name">
-        ${service.name || 'Послуга'}
+        ${serviceName}
       </span>
 
       <span class="service-info">
-        ${service.duration || 0} хв · ${service.price || 0} грн
+        ${duration} хв · ${price} грн
       </span>
     `;
 
@@ -226,158 +238,100 @@ function renderServices() {
   });
 }
 
-function selectService(service, btn) {
-  state.selectedService = service;
-  state.selectedDate = null;
-  state.selectedTime = null;
+function renderServices() {
+  els.services.innerHTML = '';
 
-  document.querySelectorAll('.service-btn').forEach(b => b.classList.remove('selected'));
-  btn.classList.add('selected');
-
-  openStep('date');
-  renderCalendar();
-  els.slots.innerHTML = '';
-  els.timeHint.textContent = 'Оберіть дату.';
-  updateSummary();
-}
-
-function renderCalendar() {
-  const year = state.currentMonth.getFullYear();
-  const month = state.currentMonth.getMonth();
-
-  els.monthTitle.textContent =
-    state.currentMonth.toLocaleDateString('uk-UA', {
-      month: 'long',
-      year: 'numeric'
-    });
-
-  els.calendar.innerHTML = '';
-
-  // Дивимось, що реально прийшло з Google Sheets
-  console.log('SCHEDULE:', state.schedule);
-
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-
-  const mondayIndex =
-    (firstDay.getDay() + 6) % 7;
-
-  // Порожні клітинки перед 1 числом
-  for (let i = 0; i < mondayIndex; i++) {
-    const empty = document.createElement('button');
-
-    empty.type = 'button';
-    empty.className = 'day-btn day-empty';
-    empty.disabled = true;
-
-    els.calendar.appendChild(empty);
+  if (!state.services.length) {
+    els.services.innerHTML = `
+      <div class="hint">
+        Наразі немає доступних послуг.
+      </div>
+    `;
+    return;
   }
 
-  // Формуємо список доступних дат
-  const availableDates = new Set();
-
-  state.schedule.forEach(item => {
-    // TRUE може прийти як boolean або як текст "TRUE"
-    const active =
-      item.active === true ||
-      String(item.active).toUpperCase() === 'TRUE';
-
-    if (!active) return;
-
-    let dateValue = item.date;
-
-    if (!dateValue) return;
-
-    let date;
-
-    // Якщо прийшла дата у форматі 2026-08-20
-    if (typeof dateValue === 'string') {
-      const match = dateValue.match(/^(\d{4})-(\d{2})-(\d{2})/);
-
-      if (match) {
-        date = new Date(
-          Number(match[1]),
-          Number(match[2]) - 1,
-          Number(match[3])
-        );
-      } else {
-        date = new Date(dateValue);
-      }
-    } else {
-      date = new Date(dateValue);
-    }
-
-    if (isNaN(date.getTime())) {
-      console.warn('Невірна дата в Schedule:', item.date);
-      return;
-    }
-
-    const iso =
-      date.getFullYear() +
-      '-' +
-      String(date.getMonth() + 1).padStart(2, '0') +
-      '-' +
-      String(date.getDate()).padStart(2, '0');
-
-    availableDates.add(iso);
-  });
-
-  console.log(
-    'AVAILABLE DATES:',
-    [...availableDates]
-  );
-
-  // Малюємо дні
-  for (let day = 1; day <= lastDay.getDate(); day++) {
-    const date = new Date(year, month, day);
-
-    const iso =
-      year +
-      '-' +
-      String(month + 1).padStart(2, '0') +
-      '-' +
-      String(day).padStart(2, '0');
-
+  state.services.forEach(service => {
     const btn = document.createElement('button');
 
     btn.type = 'button';
-    btn.className = 'day-btn';
-    btn.textContent = day;
+    btn.className = 'service-btn';
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Назва послуги
+    const serviceName =
+      service.name ||
+      service.title ||
+      service.serviceName ||
+      service.label ||
+      'Послуга';
 
-    const currentDate = new Date(date);
-    currentDate.setHours(0, 0, 0, 0);
+    // Тривалість
+    const duration =
+      Number(service.duration) || 0;
 
-    const isAvailable =
-      availableDates.has(iso);
+    // Ціна
+    const price =
+      Number(service.price) || 0;
 
-    const isPast =
-      currentDate < today;
+    btn.innerHTML = `
+      <span class="service-name">
+        ${serviceName}
+      </span>
 
-    const disabled =
-      isPast ||
-      !isAvailable ||
-      !state.selectedService;
+      <span class="service-info">
+        ${duration} хв · ${price} грн
+      </span>
+    `;
 
-    btn.disabled = disabled;
-
-    // Додаємо клас доступного дня
-    if (isAvailable && !isPast && state.selectedService) {
-      btn.classList.add('available');
-    }
-
-    if (state.selectedDate === iso) {
+    if (
+      state.selectedService &&
+      state.selectedService.id === service.id
+    ) {
       btn.classList.add('selected');
     }
 
     btn.addEventListener('click', () => {
-      selectDate(iso);
+      selectService(service, btn);
     });
 
-    els.calendar.appendChild(btn);
+    els.services.appendChild(btn);
+  });
+}
+
+
+function selectService(service, btn) {
+  // Запам'ятовуємо вибрану послугу
+  state.selectedService = service;
+
+  // Скидаємо попередній вибір
+  state.selectedDate = null;
+  state.selectedTime = null;
+
+  // Знімаємо selected з усіх кнопок
+  document
+    .querySelectorAll('.service-btn')
+    .forEach(b => {
+      b.classList.remove('selected');
+    });
+
+  // Виділяємо поточну кнопку
+  if (btn) {
+    btn.classList.add('selected');
   }
+
+  // Переходимо до кроку вибору дати
+  openStep('date');
+
+  // Перемальовуємо календар
+  renderCalendar();
+
+  // Очищаємо час
+  els.slots.innerHTML = '';
+
+  // Підказка
+  els.timeHint.textContent = 'Оберіть дату.';
+
+  // Оновлюємо підсумок
+  updateSummary();
 }
 function changeMonth(delta) {
   const next = new Date(state.currentMonth);
