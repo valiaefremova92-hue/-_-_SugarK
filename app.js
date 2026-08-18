@@ -7,7 +7,7 @@
    Settings, Services, Schedule, Blocks, Bookings, Clients.
 */
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbwuwjAHpO97X4A6iwrahiofOHbtVOkJU-kNz039mP-dSUWduTVuopRPuTalNEKAHBMrGA/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxQDyOfNZVQnA7NK11S--3KQaMx6NTqLUbyU9AjqqQ9S-Sjdv5pePh6cct6g_LzOshzmg/exec';
 
 const DEFAULT_SETTINGS = {
   salonName: 'Sugar Katerina',
