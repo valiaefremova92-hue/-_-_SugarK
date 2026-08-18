@@ -180,25 +180,43 @@ function renderServices() {
   els.services.innerHTML = '';
 
   if (!state.services.length) {
-    els.services.innerHTML = '<div class="empty">Послуги ще не додані.</div>';
+    els.services.innerHTML = `
+      <div class="hint">
+        Наразі немає доступних послуг.
+      </div>
+    `;
     return;
   }
 
   state.services.forEach(service => {
     const btn = document.createElement('button');
+
     btn.type = 'button';
     btn.className = 'service-btn';
+
     btn.innerHTML = `
-      <strong>${escapeHtml(service.name)}</strong>
-      <span>${service.duration} хв · ${service.price ? `${service.price} грн` : 'ціну уточнить майстер'}</span>
+      <span class="service-name">
+        ${service.name || 'Послуга'}
+      </span>
+
+      <span class="service-info">
+        ${service.duration || 0} хв · ${service.price || 0} грн
+      </span>
     `;
-    btn.addEventListener('click', () => selectService(service, btn));
+
+    if (
+      state.selectedService &&
+      state.selectedService.id === service.id
+    ) {
+      btn.classList.add('selected');
+    }
+
+    btn.addEventListener('click', () => {
+      selectService(service);
+    });
+
     els.services.appendChild(btn);
   });
-
-  els.manualService.innerHTML = state.services
-    .map(s => `<option value="${escapeAttr(s.id)}">${escapeHtml(s.name)} — ${s.duration} хв</option>`)
-    .join('');
 }
 
 function selectService(service, btn) {
