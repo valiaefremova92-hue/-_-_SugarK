@@ -2,6 +2,9 @@
    Frontend: GitHub Pages / any static hosting
    Backend: Google Apps Script Web App
    Database: Google Sheets
+
+   Synced with the current Katerina HTML and sheets:
+   Settings, Services, Schedule, Blocks, Bookings, Clients.
 */
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbxs6YV70oL8YYZKlctlIDbJDyGUmplT5gEfmjpeaIAARL7UfhI2zPCCTZb2VY-JU24E/exec';
@@ -78,65 +81,32 @@ const els = {
 
 async function init() {
   try {
-    if (state.tg) {
-      state.tg.ready();
-      state.tg.expand();
+    if (!state.tg) throw new Error('Mini App потрібно відкривати через Telegram.');
 
-      state.initData = state.tg.initData || '';
+    state.tg.ready();
+    state.tg.expand();
+    state.initData = state.tg.initData || '';
+    state.user = state.tg.initDataUnsafe?.user || null;
 
-      console.log('TELEGRAM INIT DATA:', state.initData);
-
-      state.user = state.tg.initDataUnsafe?.user || null;
-
-      console.log('TELEGRAM USER:', state.user);
-    } else {
-      console.error('Telegram WebApp не знайдений');
-    }
+    if (!state.initData) throw new Error('Telegram initData не переданий. Відкрийте Mini App саме через Telegram.');
 
     bindEvents();
 
-    const data = await apiPost('bootstrap', {
-      initData: state.initData
-    });
-
-    console.log('BOOTSTRAP RESPONSE:', data);
-
-    // Перевіряємо, що саме прийшло від Apps Script
-    console.log('SERVICES FROM BACKEND:', data.services);
-    console.table(data.services);
-
-    if (!data || data.ok === false) {
-      throw new Error(
-        data?.error || 'Backend не повернув дані.'
-      );
-    }
+    const data = await apiPost('bootstrap', { initData: state.initData });
+    if (!data || data.ok === false) throw new Error(data?.error || 'Backend не повернув дані.');
 
     applyBootstrap(data);
-
-    console.log('SERVICES IN STATE:', state.services);
-    console.table(state.services);
-
     renderServices();
     renderCalendar();
 
-    if (state.isMaster) {
-      showAdmin();
-    }
-
+    if (state.isMaster) showAdmin();
   } catch (err) {
     console.error('INIT ERROR:', err);
-
-    showError(
-      err.message ||
-      'Не вдалося завантажити систему.'
-    );
+    showError(err.message || 'Не вдалося завантажити систему.');
   }
 }
 
-init();
 function applyBootstrap(data) {
-  if (!data?.ok) throw new Error(data?.error || 'Помилка завантаження.');
-
   state.user = data.user || state.user;
   state.isMaster = Boolean(data.user?.isMaster);
   state.services = Array.isArray(data.services) ? data.services : [];
@@ -151,23 +121,22 @@ function applyBootstrap(data) {
     els.logo.classList.remove('hidden');
   }
 
-  if (state.settings.colors) {
-    const root = document.documentElement;
-    Object.entries({
-      primary: 'primary',
-      primaryDark: 'primary-dark',
-      primaryLight: 'primary-light',
-      bg: 'bg',
-      bgSoft: 'bg-soft',
-      card: 'card',
-      text: 'text',
-      muted: 'muted',
-      accent: 'accent',
-      border: 'border'
-    }).forEach(([key, css]) => {
-      if (state.settings.colors[key]) root.style.setProperty(`--${css}`, state.settings.colors[key]);
-    });
-  }
+  const colors = state.settings.colors || {};
+  const root = document.documentElement;
+  Object.entries({
+    primary: 'primary',
+    primaryDark: 'primary-dark',
+    primaryLight: 'primary-light',
+    bg: 'bg',
+    bgSoft: 'bg-soft',
+    card: 'card',
+    text: 'text',
+    muted: 'muted',
+    accent: 'accent',
+    border: 'border'
+  }).forEach(([key, css]) => {
+    if (colors[key]) root.style.setProperty(`--${css}`, colors[key]);
+  });
 }
 
 function bindEvents() {
@@ -187,326 +156,124 @@ function renderServices() {
   els.services.innerHTML = '';
 
   if (!state.services.length) {
-    els.services.innerHTML = `
-      <div class="hint">
-        Наразі немає доступних послуг.
-      </div>
-    `;
+    els.services.innerHTML = '<div class="hint">Наразі немає доступних послуг.</div>';
+    els.manualService.innerHTML = '';
     return;
   }
 
   state.services.forEach(service => {
     const btn = document.createElement('button');
-
     btn.type = 'button';
     btn.className = 'service-btn';
 
-    const serviceName =
-      service.name ||
-      service.title ||
-      service.serviceName ||
-      service.service ||
-      service.label ||
-      service.id ||
-      'Послуга';
-
+    const name = service.name || service.service_name || service.title || 'Послуга';
     const duration = Number(service.duration || 0);
     const price = Number(service.price || 0);
 
     btn.innerHTML = `
-      <span class="service-name">
-        ${serviceName}
-      </span>
-
-      <span class="service-info">
-        ${duration} хв · ${price} грн
-      </span>
+      <strong>${escapeHtml(name)}</strong>
+      <span>${duration} хв · ${price ? `${price} грн` : 'ціну уточнить майстер'}</span>
     `;
 
-    if (
-      state.selectedService &&
-      state.selectedService.id === service.id
-    ) {
+    if (state.selectedService && String(state.selectedService.id) === String(service.id)) {
       btn.classList.add('selected');
     }
 
-    btn.addEventListener('click', () => {
-      selectService(service);
-    });
-
+    btn.addEventListener('click', () => selectService(service, btn));
     els.services.appendChild(btn);
   });
+
+  els.manualService.innerHTML = state.services
+    .map(s => `<option value="${escapeAttr(s.id)}">${escapeHtml(s.name || s.service_name || 'Послуга')} — ${Number(s.duration || 0)} хв</option>`)
+    .join('');
 }
-
-function renderServices() {
-  els.services.innerHTML = '';
-
-  if (!state.services.length) {
-    els.services.innerHTML = `
-      <div class="hint">
-        Наразі немає доступних послуг.
-      </div>
-    `;
-    return;
-  }
-
-  state.services.forEach(service => {
-    const btn = document.createElement('button');
-
-    btn.type = 'button';
-    btn.className = 'service-btn';
-
-    // Назва послуги
-    const serviceName =
-      service.name ||
-      service.title ||
-      service.serviceName ||
-      service.label ||
-      'Послуга';
-
-    // Тривалість
-    const duration =
-      Number(service.duration) || 0;
-
-    // Ціна
-    const price =
-      Number(service.price) || 0;
-
-    btn.innerHTML = `
-      <span class="service-name">
-        ${serviceName}
-      </span>
-
-      <span class="service-info">
-        ${duration} хв · ${price} грн
-      </span>
-    `;
-
-    if (
-      state.selectedService &&
-      state.selectedService.id === service.id
-    ) {
-      btn.classList.add('selected');
-    }
-
-    btn.addEventListener('click', () => {
-      selectService(service, btn);
-    });
-
-    els.services.appendChild(btn);
-  });
-}
-
 
 function selectService(service, btn) {
-  // Запам'ятовуємо вибрану послугу
   state.selectedService = service;
-
-  // Скидаємо попередній вибір
   state.selectedDate = null;
   state.selectedTime = null;
 
-  // Знімаємо selected з усіх кнопок
-  document
-    .querySelectorAll('.service-btn')
-    .forEach(b => {
-      b.classList.remove('selected');
-    });
+  document.querySelectorAll('.service-btn').forEach(b => b.classList.remove('selected'));
+  if (btn) btn.classList.add('selected');
 
-  // Виділяємо поточну кнопку
-  if (btn) {
-    btn.classList.add('selected');
-  }
-
-  // Переходимо до кроку вибору дати
   openStep('date');
-
-  // Перемальовуємо календар
   renderCalendar();
-
-  // Очищаємо час
   els.slots.innerHTML = '';
-
-  // Підказка
   els.timeHint.textContent = 'Оберіть дату.';
-
-  // Оновлюємо підсумок
   updateSummary();
 }
 
-
-// 👇 ОСЬ ТУТ ВСТАВЛЯЄМО renderCalendar
 function renderCalendar() {
   const year = state.currentMonth.getFullYear();
   const month = state.currentMonth.getMonth();
 
-  els.monthTitle.textContent =
-    state.currentMonth.toLocaleDateString('uk-UA', {
-      month: 'long',
-      year: 'numeric'
-    });
-
+  els.monthTitle.textContent = state.currentMonth.toLocaleDateString('uk-UA', {
+    month: 'long',
+    year: 'numeric'
+  });
   els.calendar.innerHTML = '';
-
-  console.log('SCHEDULE:', state.schedule);
 
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
+  const mondayIndex = (firstDay.getDay() + 6) % 7;
 
-  const mondayIndex =
-    (firstDay.getDay() + 6) % 7;
-
-  // Порожні клітинки перед 1 числом
   for (let i = 0; i < mondayIndex; i++) {
     const empty = document.createElement('button');
-
     empty.type = 'button';
     empty.className = 'day-btn day-empty';
     empty.disabled = true;
-
     els.calendar.appendChild(empty);
   }
 
-  // Формуємо доступні дати
-  const availableDates = new Set();
-
-  state.schedule.forEach(item => {
-    const active =
-      item.active === true ||
-      String(item.active).toUpperCase() === 'TRUE';
-
-    if (!active || !item.date) return;
-
-    let date;
-
-    if (typeof item.date === 'string') {
-      const match = item.date.match(
-        /^(\d{4})-(\d{2})-(\d{2})/
-      );
-
-      if (match) {
-        date = new Date(
-          Number(match[1]),
-          Number(match[2]) - 1,
-          Number(match[3])
-        );
-      } else {
-        date = new Date(item.date);
-      }
-    } else {
-      date = new Date(item.date);
-    }
-
-    if (isNaN(date.getTime())) {
-      console.warn(
-        'Невірна дата в Schedule:',
-        item.date
-      );
-      return;
-    }
-
-    const iso =
-      date.getFullYear() +
-      '-' +
-      String(date.getMonth() + 1).padStart(2, '0') +
-      '-' +
-      String(date.getDate()).padStart(2, '0');
-
-    availableDates.add(iso);
-  });
-
-  console.log(
-    'AVAILABLE DATES:',
-    [...availableDates]
+  const availableDates = new Set(
+    state.schedule
+      .filter(x => yes(x.active))
+      .map(x => normalizeDate(x.date))
+      .filter(Boolean)
   );
 
-  // Малюємо дні
-  for (
-    let day = 1;
-    day <= lastDay.getDate();
-    day++
-  ) {
-    const date = new Date(year, month, day);
+  const today = startOfDay(new Date());
 
-    const iso =
-      year +
-      '-' +
-      String(month + 1).padStart(2, '0') +
-      '-' +
-      String(day).padStart(2, '0');
+  for (let day = 1; day <= lastDay.getDate(); day++) {
+    const date = new Date(year, month, day);
+    const iso = toIsoDate(date);
 
     const btn = document.createElement('button');
-
     btn.type = 'button';
     btn.className = 'day-btn';
     btn.textContent = day;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const currentDate = new Date(date);
-    currentDate.setHours(0, 0, 0, 0);
-
-    const isAvailable =
-      availableDates.has(iso);
-
-    const isPast =
-      currentDate < today;
-
     const disabled =
-      isPast ||
-      !isAvailable ||
+      startOfDay(date) < today ||
+      !availableDates.has(iso) ||
       !state.selectedService;
 
     btn.disabled = disabled;
 
-    if (
-      isAvailable &&
-      !isPast &&
-      state.selectedService
-    ) {
-      btn.classList.add('available');
-    }
+    if (availableDates.has(iso) && !disabled) btn.classList.add('available');
+    if (state.selectedDate === iso) btn.classList.add('selected');
 
-    if (state.selectedDate === iso) {
-      btn.classList.add('selected');
-    }
-
-    btn.addEventListener('click', () => {
-      selectDate(iso);
-    });
-
+    btn.addEventListener('click', () => selectDate(iso));
     els.calendar.appendChild(btn);
   }
 }
 
-
 function changeMonth(delta) {
   const next = new Date(state.currentMonth);
-
-  next.setMonth(
-    next.getMonth() + delta
-  );
-
+  next.setMonth(next.getMonth() + delta);
   state.currentMonth = next;
-
   renderCalendar();
 }
-
 
 async function selectDate(date) {
   state.selectedDate = date;
   state.selectedTime = null;
-
+  hideError();
   renderCalendar();
-
   openStep('time');
 
-  els.slots.innerHTML =
-    '<div class="empty">Завантажую вільний час…</div>';
-
-  els.timeHint.textContent =
-    'Перевіряємо графік та записи.';
+  els.slots.innerHTML = '<div class="empty">Завантажую вільний час…</div>';
+  els.timeHint.textContent = 'Перевіряємо графік та записи.';
 
   try {
     const data = await apiPost('getSlots', {
@@ -515,24 +282,18 @@ async function selectDate(date) {
       serviceId: state.selectedService.id
     });
 
-    if (!data.ok) {
-      throw new Error(
-        data.error ||
-        'Не вдалося отримати час.'
-      );
-    }
-
+    if (!data || data.ok === false) throw new Error(data?.error || 'Не вдалося отримати час.');
     renderSlots(data.slots || []);
-
   } catch (err) {
     els.slots.innerHTML = '';
-    showError(err.message);
+    showError(err.message || 'Не вдалося отримати час.');
   }
 }
+
 function renderSlots(slots) {
   els.slots.innerHTML = '';
 
-  if (!slots.length) {
+  if (!Array.isArray(slots) || !slots.length) {
     els.timeHint.textContent = 'На цей день вільного часу немає.';
     els.slots.innerHTML = '<div class="empty">Спробуйте іншу дату.</div>';
     return;
@@ -564,11 +325,13 @@ function updateSummary() {
     return;
   }
 
+  const serviceName = state.selectedService.name || state.selectedService.service_name || 'Послуга';
   const end = addMinutesToTime(state.selectedTime, state.selectedService.duration);
+
   els.summary.classList.add('visible');
   els.summary.innerHTML = `
     <strong>Ваш запис:</strong><br>
-    ${escapeHtml(state.selectedService.name)}<br>
+    ${escapeHtml(serviceName)}<br>
     ${formatDate(state.selectedDate)} · ${state.selectedTime}–${end}<br>
     ${state.selectedService.price ? `${state.selectedService.price} грн` : 'Ціну уточнить майстер'}
   `;
@@ -602,15 +365,14 @@ async function submitBooking(event) {
       comment
     });
 
-    if (!data.ok) throw new Error(data.error || 'Не вдалося створити запис.');
+    if (!data || data.ok === false) throw new Error(data?.error || 'Не вдалося створити запис.');
 
-    const b = data.booking;
-    showSuccess(b);
+    showSuccess(data.booking);
 
-    if (state.tg) {
+    if (state.tg && data.booking?.id) {
       state.tg.sendData(JSON.stringify({
         action: 'booking_created',
-        bookingId: b.id
+        bookingId: data.booking.id
       }));
     }
   } catch (err) {
@@ -622,13 +384,19 @@ async function submitBooking(event) {
 }
 
 function showSuccess(b) {
+  const serviceName = b?.serviceName || b?.service_name || state.selectedService?.name || 'Послуга';
+  const date = b?.date || state.selectedDate;
+  const start = b?.start || state.selectedTime;
+  const end = b?.end || (start ? addMinutesToTime(start, state.selectedService?.duration || 0) : '');
+  const price = b?.price ?? state.selectedService?.price ?? 0;
+
   els.successCard.classList.remove('hidden');
   els.successTitle.textContent = 'Запис підтверджено 💗';
   els.successDetails.innerHTML = `
-    <strong>Послуга:</strong> ${escapeHtml(b.serviceName)}<br>
-    <strong>Дата:</strong> ${formatDate(b.date)}<br>
-    <strong>Час:</strong> ${b.start}–${b.end}<br>
-    <strong>Вартість:</strong> ${b.price ? `${b.price} грн` : 'уточнить майстер'}
+    <strong>Послуга:</strong> ${escapeHtml(serviceName)}<br>
+    <strong>Дата:</strong> ${formatDate(date)}<br>
+    <strong>Час:</strong> ${start}–${end}<br>
+    <strong>Вартість:</strong> ${price ? `${price} грн` : 'уточнить майстер'}
   `;
   window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 }
@@ -640,9 +408,12 @@ function resetBooking() {
   els.form.reset();
   els.summary.classList.remove('visible');
   els.successCard.classList.add('hidden');
+  els.slots.innerHTML = '';
+  els.timeHint.textContent = 'Спочатку оберіть послугу і дату.';
   document.querySelectorAll('.service-btn').forEach(b => b.classList.remove('selected'));
   openStep('service');
   renderCalendar();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 async function loadMyBookings() {
@@ -652,10 +423,10 @@ async function loadMyBookings() {
 
   try {
     const data = await apiPost('myBookings', { initData: state.initData });
-    if (!data.ok) throw new Error(data.error || 'Не вдалося завантажити записи.');
+    if (!data || data.ok === false) throw new Error(data?.error || 'Не вдалося завантажити записи.');
     renderMyBookings(data.bookings || []);
   } catch (err) {
-    showError(err.message);
+    showError(err.message || 'Не вдалося завантажити записи.');
   }
 }
 
@@ -668,10 +439,11 @@ function renderMyBookings(bookings) {
   }
 
   bookings.forEach(b => {
+    const serviceName = b.serviceName || b.service_name || 'Послуга';
     const item = document.createElement('div');
     item.className = 'booking-item';
     item.innerHTML = `
-      <strong>${escapeHtml(b.serviceName)}</strong>
+      <strong>${escapeHtml(serviceName)}</strong>
       <div class="booking-meta">
         ${formatDate(b.date)} · ${b.start}–${b.end}<br>
         ${b.price ? `${b.price} грн` : ''} ${b.comment ? `<br>${escapeHtml(b.comment)}` : ''}
@@ -680,7 +452,7 @@ function renderMyBookings(bookings) {
         <button class="secondary-btn" type="button" data-cancel="${escapeAttr(b.id)}">Скасувати</button>
       </div>
     `;
-    item.querySelector('[data-cancel]').addEventListener('click', () => cancelBooking(b.id));
+    item.querySelector('[data-cancel]')?.addEventListener('click', () => cancelBooking(b.id));
     els.myBookings.appendChild(item);
   });
 }
@@ -694,12 +466,12 @@ async function cancelBooking(id) {
       bookingId: id
     });
 
-    if (!data.ok) throw new Error(data.error || 'Не вдалося скасувати запис.');
+    if (!data || data.ok === false) throw new Error(data?.error || 'Не вдалося скасувати запис.');
 
     toast('Запис скасовано');
     loadMyBookings();
   } catch (err) {
-    showError(err.message);
+    showError(err.message || 'Не вдалося скасувати запис.');
   }
 }
 
@@ -719,42 +491,38 @@ async function loadAdminCalendar() {
       date: els.adminDate.value
     });
 
-    if (!data.ok) throw new Error(data.error || 'Не вдалося завантажити календар.');
-
+    if (!data || data.ok === false) throw new Error(data?.error || 'Не вдалося завантажити календар.');
     renderAdminCalendar(data);
   } catch (err) {
-    showError(err.message);
+    showError(err.message || 'Не вдалося завантажити календар.');
   }
 }
 
 function renderAdminCalendar(data) {
   const items = [];
 
-  (data.schedule || []).forEach(x => {
-    items.push({
-      time: `${x.start}–${x.end}`,
-      text: 'Робочий час',
-      className: 'timeline-item'
-    });
-  });
+  (data.schedule || []).forEach(x => items.push({
+    time: `${x.start}–${x.end}`,
+    text: 'Робочий час',
+    className: 'timeline-item'
+  }));
 
-  (data.blocks || []).forEach(x => {
-    items.push({
-      time: `${x.start}–${x.end}`,
-      text: `🔒 ${x.reason || 'Заблоковано'}`,
-      className: 'timeline-item block-item'
-    });
-  });
+  (data.blocks || []).forEach(x => items.push({
+    time: `${x.start}–${x.end}`,
+    text: `🔒 ${x.reason || 'Заблоковано'}`,
+    className: 'timeline-item block-item'
+  }));
 
   (data.bookings || []).forEach(x => {
+    const serviceName = x.serviceName || x.service_name || 'Послуга';
     items.push({
       time: `${x.start}–${x.end}`,
-      text: `👤 ${x.clientName} · ${x.serviceName}<br><span class="small">${escapeHtml(x.phone || '')}${x.comment ? `<br>${escapeHtml(x.comment)}` : ''}</span>`,
+      text: `👤 ${escapeHtml(x.clientName || '')} · ${escapeHtml(serviceName)}<br><span class="small">${escapeHtml(x.phone || '')}${x.comment ? `<br>${escapeHtml(x.comment) }` : ''}</span>`,
       className: 'timeline-item'
     });
   });
 
-  items.sort((a,b) => a.time.localeCompare(b.time));
+  items.sort((a, b) => a.time.localeCompare(b.time));
 
   els.adminCalendar.innerHTML = items.length
     ? items.map(x => `<div class="${x.className}"><div class="time">${x.time}</div><div>${x.text}</div></div>`).join('')
@@ -772,14 +540,14 @@ async function addBlock() {
 
   try {
     const data = await apiPost('adminAddBlock', payload);
-    if (!data.ok) throw new Error(data.error || 'Не вдалося заблокувати час.');
+    if (!data || data.ok === false) throw new Error(data?.error || 'Не вдалося заблокувати час.');
     els.blockStart.value = '';
     els.blockEnd.value = '';
     els.blockReason.value = '';
     toast('Час заблоковано');
     loadAdminCalendar();
   } catch (err) {
-    showError(err.message);
+    showError(err.message || 'Не вдалося заблокувати час.');
   }
 }
 
@@ -796,7 +564,7 @@ async function addManualBooking() {
 
   try {
     const data = await apiPost('adminManualBooking', payload);
-    if (!data.ok) throw new Error(data.error || 'Не вдалося додати запис.');
+    if (!data || data.ok === false) throw new Error(data?.error || 'Не вдалося додати запис.');
     els.manualName.value = '';
     els.manualPhone.value = '';
     els.manualStart.value = '';
@@ -804,24 +572,26 @@ async function addManualBooking() {
     toast('Ручний запис додано');
     loadAdminCalendar();
   } catch (err) {
-    showError(err.message);
+    showError(err.message || 'Не вдалося додати запис.');
   }
 }
 
 function openStep(name) {
-  const order = ['service','date','time','form'];
+  const order = ['service', 'date', 'time', 'form'];
   const index = order.indexOf(name);
+  if (index < 0) return;
 
   order.forEach((step, i) => {
-    $(`step-${step}`).classList.toggle('active', i <= index);
+    const el = $(`step-${step}`);
+    if (el) el.classList.toggle('active', i <= index);
   });
 
-  setTimeout(() => $(`step-${name}`)?.scrollIntoView({ behavior:'smooth', block:'start' }), 50);
+  setTimeout(() => $(`step-${name}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
 }
 
 async function apiPost(action, payload = {}) {
   if (!API_URL || API_URL.includes('PASTE_APPS_SCRIPT')) {
-    throw new Error('У app.js ще не вказано URL Apps Script Web App.');
+    throw new Error('У app.js не вказано URL Apps Script Web App.');
   }
 
   const response = await fetch(API_URL, {
@@ -832,11 +602,14 @@ async function apiPost(action, payload = {}) {
 
   const text = await response.text();
 
+  let data;
   try {
-    return JSON.parse(text);
+    data = JSON.parse(text);
   } catch {
     throw new Error('Backend повернув не JSON. Перевір URL Apps Script Web App.');
   }
+
+  return data;
 }
 
 function yes(value) {
@@ -846,11 +619,13 @@ function yes(value) {
 function normalizeDate(value) {
   if (!value) return '';
   if (Object.prototype.toString.call(value) === '[object Date]') return toIsoDate(value);
-  return String(value).slice(0,10);
+  const text = String(value);
+  const match = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return match ? `${match[1]}-${match[2]}-${match[3]}` : text.slice(0, 10);
 }
 
 function toIsoDate(date) {
-  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
 function startOfDay(date) {
@@ -858,35 +633,42 @@ function startOfDay(date) {
 }
 
 function timeToMinutes(time) {
-  const [h,m] = String(time).split(':').map(Number);
-  return h*60+m;
+  const [h, m] = String(time).split(':').map(Number);
+  return h * 60 + m;
 }
 
 function addMinutesToTime(time, minutes) {
-  const total = timeToMinutes(time) + Number(minutes);
-  return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;
+  const total = timeToMinutes(time) + Number(minutes || 0);
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 }
 
 function formatDate(iso) {
+  if (!iso) return '';
   return new Date(`${iso}T12:00:00`).toLocaleDateString('uk-UA', {
-    day:'numeric', month:'long', year:'numeric'
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
   });
 }
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>'"]/g, tag => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    "'": '&#39;',
+    '"': '&quot;'
   }[tag]));
 }
 
 function escapeAttr(value) {
-  return escapeHtml(value).replace(/`/g,'&#96;');
+  return escapeHtml(value).replace(/`/g, '&#96;');
 }
 
 function showError(message) {
   els.errorBox.textContent = message;
   els.errorBox.classList.remove('hidden');
-  els.errorBox.scrollIntoView({ behavior:'smooth', block:'center' });
+  els.errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function hideError() {
@@ -899,3 +681,5 @@ function toast(message) {
   els.toast.classList.add('show');
   setTimeout(() => els.toast.classList.remove('show'), 2400);
 }
+
+init();
