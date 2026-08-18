@@ -7,7 +7,7 @@
    Settings, Services, Schedule, Blocks, Bookings, Clients.
 */
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbwoVPKoic269rtRhjYvx1GzXIgCNkh8c0Zy0x6ERnki3tp4PZ1S6shPt86jsu2HJj8ajw/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxs6YV70oL8YYZKlctlIDbJDyGUmplT5gEfmjpeaIAARL7UfhI2zPCCTZb2VY-JU24E/exec';
 
 const DEFAULT_SETTINGS = {
   salonName: 'Sugar Katerina',
@@ -98,7 +98,6 @@ async function init() {
     applyBootstrap(data);
     console.log('KATERINA SERVICES:', state.services);
     console.log('KATERINA SCHEDULE:', state.schedule);
-    renderScheduleDebug(state.schedule, data.schedule);
     renderServices();
     renderCalendar();
 
@@ -182,32 +181,6 @@ function bindEvents() {
   els.adminDate.addEventListener('change', loadAdminCalendar);
   els.addBlock.addEventListener('click', addBlock);
   els.addManual.addEventListener('click', addManualBooking);
-}
-
-function renderScheduleDebug(normalizedSchedule, rawSchedule) {
-  const box = document.getElementById('scheduleDebug');
-  if (!box) return;
-
-  const raw = Array.isArray(rawSchedule) ? rawSchedule : [];
-  const normalized = Array.isArray(normalizedSchedule) ? normalizedSchedule : [];
-
-  let html = `
-    <div style="font-weight:700;margin-bottom:8px;">Перевірка графіка</div>
-    <div>Отримано з Apps Script: <b>${raw.length}</b> записів</div>
-    <div>Після обробки: <b>${normalized.length}</b> записів</div>
-  `;
-
-  if (!raw.length) {
-    html += '<div style="margin-top:8px;color:#9A6034;">⚠️ Apps Script не передав жодної дати з Schedule.</div>';
-  } else {
-    html += '<div style="margin-top:8px;">';
-    normalized.forEach((x, i) => {
-      html += `<div style="padding:6px 0;border-top:1px solid rgba(0,0,0,.08);"><b>${i + 1}.</b> ${escapeHtml(x.date || '—')} · ${escapeHtml(x.start || '—')}–${escapeHtml(x.end || '—')} · active=${escapeHtml(String(x.active))}</div>`;
-    });
-    html += '</div>';
-  }
-
-  box.innerHTML = html;
 }
 
 function renderServices() {
