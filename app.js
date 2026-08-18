@@ -125,6 +125,8 @@ async function init() {
     );
   }
 }
+
+init();
 function applyBootstrap(data) {
   if (!data?.ok) throw new Error(data?.error || 'Помилка завантаження.');
 
