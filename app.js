@@ -4,7 +4,7 @@
    Database: Google Sheets
 */
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbzvkxBV3te_2J5itmQjvTvP9wjHpEPa95DSdgsq8avP50QaVWBLWzEROjqayYnywlBq/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzmpNFMW17ufzBulEFApiwV304oFrL8R6QAWTrbTCIPBNXrNBOYhjZgpETcUDr-nrSw/exec';
 
 const DEFAULT_SETTINGS = {
   salonName: 'Sugar Katerina',
