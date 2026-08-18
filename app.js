@@ -96,6 +96,8 @@ async function init() {
     if (!data || data.ok === false) throw new Error(data?.error || 'Backend не повернув дані.');
 
     applyBootstrap(data);
+    console.log('KATERINA SERVICES:', state.services);
+    console.log('KATERINA SCHEDULE:', state.schedule);
     renderServices();
     renderCalendar();
 
@@ -109,9 +111,38 @@ async function init() {
 function applyBootstrap(data) {
   state.user = data.user || state.user;
   state.isMaster = Boolean(data.user?.isMaster);
-  state.services = Array.isArray(data.services) ? data.services : [];
+  const rawServices = Array.isArray(data.services) ? data.services : [];
+  state.services = rawServices.map((service, index) => ({
+    ...service,
+    id: String(service.id ?? service.serviceId ?? service.service_id ?? index + 1),
+    name: String(
+      service.name ??
+      service.service_name ??
+      service.serviceName ??
+      service.title ??
+      service.label ??
+      'Послуга'
+    ),
+    price: Number(service.price ?? service.cost ?? 0),
+    duration: Number(service.duration ?? service.minutes ?? 0),
+    active: service.active === undefined ? true : yes(service.active)
+  }));
+
   state.settings = { ...DEFAULT_SETTINGS, ...(data.settings || {}) };
-  state.schedule = Array.isArray(data.schedule) ? data.schedule : [];
+
+  const rawSchedule = Array.isArray(data.schedule)
+    ? data.schedule
+    : Array.isArray(data.workingDays)
+      ? data.workingDays
+      : [];
+
+  state.schedule = rawSchedule.map(item => ({
+    ...item,
+    date: normalizeDate(item.date ?? item.day ?? item.workDate),
+    start: normalizeTime(item.start ?? item.startTime ?? item.from),
+    end: normalizeTime(item.end ?? item.endTime ?? item.to),
+    active: item.active === undefined ? true : yes(item.active)
+  })).filter(item => item.date);
 
   els.salonName.textContent = state.settings.salonName || 'Booking';
   els.heroText.textContent = 'Запишіться у зручний для Вас час';
@@ -166,7 +197,7 @@ function renderServices() {
     btn.type = 'button';
     btn.className = 'service-btn';
 
-    const name = service.name || service.service_name || service.title || 'Послуга';
+    const name = service.name || service.service_name || service.serviceName || service.title || service.label || 'Послуга';
     const duration = Number(service.duration || 0);
     const price = Number(service.price || 0);
 
@@ -325,7 +356,7 @@ function updateSummary() {
     return;
   }
 
-  const serviceName = state.selectedService.name || state.selectedService.service_name || 'Послуга';
+  const serviceName = state.selectedService.name || state.selectedService.service_name || state.selectedService.serviceName || state.selectedService.title || 'Послуга';
   const end = addMinutesToTime(state.selectedTime, state.selectedService.duration);
 
   els.summary.classList.add('visible');
@@ -384,7 +415,7 @@ async function submitBooking(event) {
 }
 
 function showSuccess(b) {
-  const serviceName = b?.serviceName || b?.service_name || state.selectedService?.name || 'Послуга';
+  const serviceName = b?.serviceName || b?.service_name || state.selectedService?.name || state.selectedService?.service_name || state.selectedService?.serviceName || 'Послуга';
   const date = b?.date || state.selectedDate;
   const start = b?.start || state.selectedTime;
   const end = b?.end || (start ? addMinutesToTime(start, state.selectedService?.duration || 0) : '');
@@ -618,10 +649,37 @@ function yes(value) {
 
 function normalizeDate(value) {
   if (!value) return '';
-  if (Object.prototype.toString.call(value) === '[object Date]') return toIsoDate(value);
-  const text = String(value);
-  const match = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  return match ? `${match[1]}-${match[2]}-${match[3]}` : text.slice(0, 10);
+
+  if (Object.prototype.toString.call(value) === '[object Date]') {
+    return toIsoDate(value);
+  }
+
+  const text = String(value).trim();
+
+  let match = text.match(/^(\d{4})[-.](\d{1,2})[-.](\d{1,2})/);
+  if (match) {
+    return `${match[1]}-${String(match[2]).padStart(2,'0')}-${String(match[3]).padStart(2,'0')}`;
+  }
+
+  match = text.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})/);
+  if (match) {
+    return `${match[3]}-${String(match[2]).padStart(2,'0')}-${String(match[1]).padStart(2,'0')}`;
+  }
+
+  const parsed = new Date(text);
+  if (!Number.isNaN(parsed.getTime())) return toIsoDate(parsed);
+
+  return text.slice(0,10);
+}
+
+function normalizeTime(value) {
+  if (!value) return '';
+  if (Object.prototype.toString.call(value) === '[object Date]') {
+    return `${String(value.getHours()).padStart(2,'0')}:${String(value.getMinutes()).padStart(2,'0')}`;
+  }
+  const text = String(value).trim();
+  const match = text.match(/^(\d{1,2}):(\d{2})/);
+  return match ? `${String(match[1]).padStart(2,'0')}:${match[2]}` : text;
 }
 
 function toIsoDate(date) {
