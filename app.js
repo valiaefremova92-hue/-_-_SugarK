@@ -101,6 +101,10 @@ async function init() {
 
     console.log('BOOTSTRAP RESPONSE:', data);
 
+    // Перевіряємо, що саме прийшло від Apps Script
+    console.log('SERVICES FROM BACKEND:', data.services);
+    console.table(data.services);
+
     if (!data || data.ok === false) {
       throw new Error(
         data?.error || 'Backend не повернув дані.'
@@ -108,6 +112,9 @@ async function init() {
     }
 
     applyBootstrap(data);
+
+    console.log('SERVICES IN STATE:', state.services);
+    console.table(state.services);
 
     renderServices();
     renderCalendar();
