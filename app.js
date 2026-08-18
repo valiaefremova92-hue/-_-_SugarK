@@ -5,7 +5,7 @@
 */
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbxs6YV70oL8YYZKlctlIDbJDyGUmplT5gEfmjpeaIAARL7UfhI2zPCCTZb2VY-JU24E/exec';
-
+async function apiPost(...)
 const DEFAULT_SETTINGS = {
   salonName: 'Sugar Katerina',
   logoUrl: '',
@@ -76,16 +76,74 @@ const els = {
   toast: $('toast')
 };
 
-init();
-
 async function init() {
   try {
     if (state.tg) {
       state.tg.ready();
       state.tg.expand();
+
       state.initData = state.tg.initData || '';
-      state.user = state.tg.initDataUnsafe?.user || null;
+
+      console.log(
+        'TELEGRAM INIT DATA:',
+        state.initData
+      );
+
+      state.user =
+        state.tg.initDataUnsafe?.user || null;
+
+      console.log(
+        'TELEGRAM USER:',
+        state.user
+      );
+    } else {
+      console.error(
+        'Telegram WebApp не знайдений'
+      );
     }
+
+    bindEvents();
+
+    const data = await apiPost(
+      'bootstrap',
+      {
+        initData: state.initData
+      }
+    );
+
+    console.log(
+      'BOOTSTRAP RESPONSE:',
+      data
+    );
+
+    if (!data || data.ok === false) {
+      throw new Error(
+        data?.error ||
+        'Backend не повернув дані.'
+      );
+    }
+
+    applyBootstrap(data);
+
+    renderServices();
+    renderCalendar();
+
+    if (state.isMaster) {
+      showAdmin();
+    }
+
+  } catch (err) {
+    console.error(
+      'INIT ERROR:',
+      err
+    );
+
+    showError(
+      err.message ||
+      'Не вдалося завантажити систему.'
+    );
+  }
+}
 
     bindEvents();
 
