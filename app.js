@@ -674,12 +674,11 @@ async function apiPost(action, payload = {}) {
     return JSON.parse(text);
   } catch (parseError) {
     throw new Error(
-  'Apps Script повернув не JSON.\n\n' +
-  'ACTION: ' + action +
-  '\nHTTP: ' + response.status +
-  '\nВідповідь:\n' +
-  text.substring(0, 500)
-);
+      'Apps Script повернув не JSON.\n\n' +
+      'HTTP: ' + response.status +
+      '\nВідповідь:\n' +
+      text.substring(0, 500)
+    );
   }
 }
 
