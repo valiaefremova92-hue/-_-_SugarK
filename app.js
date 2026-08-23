@@ -89,38 +89,59 @@ const els = {
 
 async function init() {
   try {
-    if (!state.tg) throw new Error('Mini App потрібно відкривати через Telegram.');
+    if (!state.tg) {
+      throw new Error('Mini App потрібно відкривати через Telegram.');
+    }
 
     state.tg.ready();
     state.tg.expand();
+
     state.initData = state.tg.initData || '';
     state.user = state.tg.initDataUnsafe?.user || null;
 
-    if (!state.initData) throw new Error('Telegram initData не переданий. Відкрийте Mini App саме через Telegram.');
+    if (!state.initData) {
+      throw new Error(
+        'Telegram initData не переданий. Відкрийте Mini App саме через Telegram.'
+      );
+    }
 
     bindEvents();
 
-    const data = await apiPost('bootstrap', { initData: state.initData });
-    if (!data || data.ok === false) throw new Error(data?.error || 'Backend не повернув дані.');
+    const data = await apiPost('bootstrap', {
+      initData: state.initData
+    });
 
-   applyBootstrap(data);
-console.log('KATERINA SERVICES:', state.services);
-console.log('KATERINA SCHEDULE:', state.schedule);
-renderServices();
-renderCalendar();
+    if (!data || data.ok === false) {
+      throw new Error(
+        data?.error || 'Backend не повернув дані.'
+      );
+    }
 
-if (state.isNewClient) {
-  openStep('intake');
-} else {
-  openStep('service');
-}
+    applyBootstrap(data);
 
-if (state.isMaster) showAdmin();catch (err) {
+    console.log('KATERINA SERVICES:', state.services);
+    console.log('KATERINA SCHEDULE:', state.schedule);
+
+    renderServices();
+    renderCalendar();
+
+    if (state.isNewClient) {
+      openStep('intake');
+    } else {
+      openStep('service');
+    }
+
+    if (state.isMaster) {
+      showAdmin();
+    }
+
+  } catch (err) {
     console.error('INIT ERROR:', err);
-    showError(err.message || 'Не вдалося завантажити систему.');
+    showError(
+      err.message || 'Не вдалося завантажити систему.'
+    );
   }
 }
-
 function applyBootstrap(data) {
   state.user = data.user || state.user;
   state.isMaster = Boolean(data.user?.isMaster);
