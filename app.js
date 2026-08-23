@@ -218,8 +218,12 @@ function bindEvents() {
   els.addManual.addEventListener('click', addManualBooking);
 
   // Питання для нової клієнтки
-  els.sugaringOptions.querySelectorAll('.option-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+  els.intakeStep.addEventListener('click', event => {
+    const btn = event.target.closest('.option-btn');
+
+    if (!btn) return;
+
+    if (els.sugaringOptions.contains(btn)) {
       state.hadSugaringBefore = btn.dataset.value;
 
       els.sugaringOptions
@@ -229,7 +233,26 @@ function bindEvents() {
       btn.classList.add('selected');
 
       updateQuestionsButton();
-    });
+      return;
+    }
+
+    if (els.shavingOptions.contains(btn)) {
+      state.shavedRecently = btn.dataset.value;
+
+      els.shavingOptions
+        .querySelectorAll('.option-btn')
+        .forEach(b => b.classList.remove('selected'));
+
+      btn.classList.add('selected');
+
+      updateQuestionsButton();
+    }
+  });
+
+  els.continueAfterQuestions.addEventListener('click', () => {
+    if (!state.hadSugaringBefore || !state.shavedRecently) return;
+
+    openStep('service');
   });
 
   els.shavingOptions.querySelectorAll('.option-btn').forEach(btn => {
