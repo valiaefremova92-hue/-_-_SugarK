@@ -79,11 +79,12 @@ const els = {
   manualStart: $('manualStart'),
   manualComment: $('manualComment'),
   addManual: $('addManual'),
-  toast: $('toast')
-   intakeStep: $('step-intake'),
-sugaringOptions: $('sugaringOptions'),
-shavingOptions: $('shavingOptions'),
-continueAfterQuestions: $('continueAfterQuestions'),
+  toast: $('toast'),
+
+  intakeStep: $('step-intake'),
+  sugaringOptions: $('sugaringOptions'),
+  shavingOptions: $('shavingOptions'),
+  continueAfterQuestions: $('continueAfterQuestions')
 };
 
 async function init() {
