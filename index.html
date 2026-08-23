@@ -20,11 +20,68 @@
   </section>
 
   <section id="clientView">
-    <section class="card step active" id="step-service">
-      <span class="label">КРОК 1</span>
-      <h2>Оберіть послугу</h2>
-      <div id="services" class="service-list"></div>
-    </section>
+   <!-- ПИТАННЯ ДЛЯ НОВОЇ КЛІЄНТКИ -->
+<section class="card step active" id="step-intake">
+  <div class="step-label">Перед першим записом</div>
+  <h2>Кілька коротких питань 🤍</h2>
+  <p class="hint">Щоб майстер могла краще підготуватися до Вашої процедури.</p>
+
+  <div class="question-block">
+    <h3>Чи робили Ви раніше шугаринг?</h3>
+
+    <div class="question-options" id="sugaringOptions">
+      <button type="button" class="option-btn" data-value="Так">
+        Так
+      </button>
+
+      <button type="button" class="option-btn" data-value="Ні">
+        Ні
+      </button>
+    </div>
+  </div>
+
+  <div class="question-block">
+    <h3>Як давно Ви користувалися бритвою?</h3>
+
+    <div class="question-options" id="shavingOptions">
+      <button type="button" class="option-btn" data-value="Менше 7 днів тому">
+        Менше 7 днів тому
+      </button>
+
+      <button type="button" class="option-btn" data-value="7–14 днів тому">
+        7–14 днів тому
+      </button>
+
+      <button type="button" class="option-btn" data-value="2–4 тижні тому">
+        2–4 тижні тому
+      </button>
+
+      <button type="button" class="option-btn" data-value="Більше місяця тому">
+        Більше місяця тому
+      </button>
+
+      <button type="button" class="option-btn" data-value="Не користуюся бритвою">
+        Не користуюся бритвою
+      </button>
+    </div>
+  </div>
+
+  <button
+    class="primary-btn"
+    id="continueAfterQuestions"
+    type="button"
+    disabled
+  >
+    Продовжити
+  </button>
+</section>
+
+<!-- ПОСЛУГИ -->
+<section class="card step" id="step-service">
+  <div class="step-label">Крок 1</div>
+  <h2>Обери послугу</h2>
+  <div id="services" class="grid-list"></div>
+</section>
 
     <section class="card step" id="step-date">
       <span class="label">КРОК 2</span>
