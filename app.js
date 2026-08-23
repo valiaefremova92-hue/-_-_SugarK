@@ -195,8 +195,49 @@ function bindEvents() {
   els.adminDate.addEventListener('change', loadAdminCalendar);
   els.addBlock.addEventListener('click', addBlock);
   els.addManual.addEventListener('click', addManualBooking);
-}
 
+  // Питання для нової клієнтки
+  els.sugaringOptions.querySelectorAll('.option-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.hadSugaringBefore = btn.dataset.value;
+
+      els.sugaringOptions
+        .querySelectorAll('.option-btn')
+        .forEach(b => b.classList.remove('selected'));
+
+      btn.classList.add('selected');
+
+      updateQuestionsButton();
+    });
+  });
+
+  els.shavingOptions.querySelectorAll('.option-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.shavedRecently = btn.dataset.value;
+
+      els.shavingOptions
+        .querySelectorAll('.option-btn')
+        .forEach(b => b.classList.remove('selected'));
+
+      btn.classList.add('selected');
+
+      updateQuestionsButton();
+    });
+  });
+
+  els.continueAfterQuestions.addEventListener('click', () => {
+    if (!state.hadSugaringBefore || !state.shavedRecently) {
+      return;
+    }
+
+    openStep('service');
+  });
+}
+function updateQuestionsButton() {
+  els.continueAfterQuestions.disabled =
+    !state.hadSugaringBefore ||
+    !state.shavedRecently;
+}
 function renderServices() {
   els.services.innerHTML = '';
 
