@@ -23,6 +23,9 @@ const state = {
   initData: '',
   user: null,
   isMaster: false,
+   isNewClient: false,
+  hadSugaringBefore: '',
+  shavedRecently: '',
   services: [],
   settings: DEFAULT_SETTINGS,
   schedule: [],
@@ -77,6 +80,10 @@ const els = {
   manualComment: $('manualComment'),
   addManual: $('addManual'),
   toast: $('toast')
+   intakeStep: $('step-intake'),
+sugaringOptions: $('sugaringOptions'),
+shavingOptions: $('shavingOptions'),
+continueAfterQuestions: $('continueAfterQuestions'),
 };
 
 async function init() {
@@ -95,14 +102,19 @@ async function init() {
     const data = await apiPost('bootstrap', { initData: state.initData });
     if (!data || data.ok === false) throw new Error(data?.error || 'Backend не повернув дані.');
 
-    applyBootstrap(data);
-    console.log('KATERINA SERVICES:', state.services);
-    console.log('KATERINA SCHEDULE:', state.schedule);
-    renderServices();
-    renderCalendar();
+   applyBootstrap(data);
+console.log('KATERINA SERVICES:', state.services);
+console.log('KATERINA SCHEDULE:', state.schedule);
+renderServices();
+renderCalendar();
 
-    if (state.isMaster) showAdmin();
-  } catch (err) {
+if (state.isNewClient) {
+  openStep('intake');
+} else {
+  openStep('service');
+}
+
+if (state.isMaster) showAdmin();catch (err) {
     console.error('INIT ERROR:', err);
     showError(err.message || 'Не вдалося завантажити систему.');
   }
@@ -111,6 +123,7 @@ async function init() {
 function applyBootstrap(data) {
   state.user = data.user || state.user;
   state.isMaster = Boolean(data.user?.isMaster);
+   state.isNewClient = Boolean(data.isNewClient);
   const rawServices = Array.isArray(data.services) ? data.services : [];
   state.services = rawServices.map((service, index) => ({
     ...service,
