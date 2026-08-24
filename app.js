@@ -264,28 +264,63 @@ function bindEvents() {
   });
 
 
-  // Кнопка "Продовжити"
-  els.continueAfterQuestions.addEventListener('click', () => {
+// Кнопка "Продовжити"
+els.continueAfterQuestions.addEventListener('click', async () => {
 
-    // Якщо не відповіли на обидва питання —
-    // нікуди не переходимо
-    if (!state.hadSugaringBefore || !state.shavedRecently) {
-      return;
-    }
+  // Якщо не відповіли на обидва питання —
+  // нікуди не переходимо
+  if (!state.hadSugaringBefore || !state.shavedRecently) {
+    return;
+  }
 
-    // Зберігаємо відповіді локально в state
-    console.log('Відповіді клієнтки:', {
+  const btn = els.continueAfterQuestions;
+
+  // Щоб не можна було натиснути кілька разів
+  btn.disabled = true;
+  btn.textContent = 'Зберігаємо...';
+
+  try {
+
+    console.log('Відправляємо відповіді:', {
       hadSugaringBefore: state.hadSugaringBefore,
       shavedRecently: state.shavedRecently
     });
 
-    // Ховаємо блок питань
+    const result = await apiPost('saveClientAnswers', {
+      initData: state.initData,
+      hadSugaringBefore: state.hadSugaringBefore,
+      shavedRecently: state.shavedRecently
+    });
+
+    console.log('Відповіді збережено:', result);
+
+    if (!result || result.ok !== true) {
+      throw new Error(
+        result?.error || 'Не вдалося зберегти відповіді.'
+      );
+    }
+
+    // Тільки після успішного збереження
+    // ховаємо питання і показуємо послуги
     els.intakeStep.classList.remove('active');
 
-    // Показуємо послуги
     openStep('service');
-  });
-}
+
+  } catch (err) {
+
+    console.error('SAVE CLIENT ANSWERS ERROR:', err);
+
+    showError(
+      err.message || 'Не вдалося зберегти відповіді.'
+    );
+
+  } finally {
+
+    btn.disabled = false;
+    btn.textContent = 'Продовжити';
+
+  }
+});
 function updateQuestionsButton() {
   els.continueAfterQuestions.disabled =
     !state.hadSugaringBefore ||
