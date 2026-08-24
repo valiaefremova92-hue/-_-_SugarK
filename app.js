@@ -710,8 +710,31 @@ async function addManualBooking() {
 }
 
 function openStep(name) {
+  // Якщо відкриваємо питання для нової клієнтки
+  if (name === 'intake') {
+    els.intakeStep?.classList.add('active');
+
+    ['service', 'date', 'time', 'form'].forEach(step => {
+      const el = $(`step-${step}`);
+      if (el) el.classList.remove('active');
+    });
+
+    setTimeout(() => {
+      els.intakeStep?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }, 50);
+
+    return;
+  }
+
+  // Перед відкриттям послуг ховаємо питання
+  els.intakeStep?.classList.remove('active');
+
   const order = ['service', 'date', 'time', 'form'];
   const index = order.indexOf(name);
+
   if (index < 0) return;
 
   order.forEach((step, i) => {
@@ -719,66 +742,12 @@ function openStep(name) {
     if (el) el.classList.toggle('active', i <= index);
   });
 
-  setTimeout(() => $(`step-${name}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
-}
-
-async function apiPost(action, payload = {}) {
-  if (!API_URL || API_URL.includes('PASTE_APPS_SCRIPT')) {
-    throw new Error(
-      'У app.js не вказано URL Apps Script Web App.'
-    );
-  }
-
-  const requestBody = {
-    action,
-    ...payload
-  };
-
-  console.log('API REQUEST:', requestBody);
-
-  let response;
-
-  try {
-    response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain;charset=utf-8'
-      },
-      body: JSON.stringify(requestBody)
+  setTimeout(() => {
+    $(`step-${name}`)?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
     });
-  } catch (networkError) {
-    throw new Error(
-      'Помилка запиту до Apps Script: ' +
-      (networkError.message || networkError)
-    );
-  }
-
-  const text = await response.text();
-
-  console.log('API STATUS:', response.status);
-  console.log(
-    'API CONTENT TYPE:',
-    response.headers.get('content-type')
-  );
-  console.log('API RAW RESPONSE:', text);
-
-  if (!text || !text.trim()) {
-    throw new Error(
-      'Apps Script повернув порожню відповідь. HTTP ' +
-      response.status
-    );
-  }
-
-  try {
-    return JSON.parse(text);
-  } catch (parseError) {
-    throw new Error(
-      'Apps Script повернув не JSON.\n\n' +
-      'HTTP: ' + response.status +
-      '\nВідповідь:\n' +
-      text.substring(0, 500)
-    );
-  }
+  }, 50);
 }
 
 function yes(value) {
