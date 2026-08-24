@@ -221,7 +221,6 @@ function bindEvents() {
 
   els.refreshAdmin.addEventListener('click', loadAdminCalendar);
   els.adminDate.addEventListener('change', loadAdminCalendar);
-
   els.addBlock.addEventListener('click', addBlock);
   els.addManual.addEventListener('click', addManualBooking);
 
@@ -230,9 +229,14 @@ function bindEvents() {
   // ПИТАННЯ ДЛЯ НОВОЇ КЛІЄНТКИ
   // ==========================================
 
-  // Перше питання — чи робила раніше шугаринг
-  els.sugaringOptions.querySelectorAll('.option-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+  els.intakeStep.addEventListener('click', event => {
+    const btn = event.target.closest('.option-btn');
+
+    if (!btn) return;
+
+
+    // ПЕРШЕ ПИТАННЯ
+    if (els.sugaringOptions.contains(btn)) {
 
       state.hadSugaringBefore = btn.dataset.value;
 
@@ -243,13 +247,13 @@ function bindEvents() {
       btn.classList.add('selected');
 
       updateQuestionsButton();
-    });
-  });
+
+      return;
+    }
 
 
-  // Друге питання — коли була бритва
-  els.shavingOptions.querySelectorAll('.option-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    // ДРУГЕ ПИТАННЯ
+    if (els.shavingOptions.contains(btn)) {
 
       state.shavedRecently = btn.dataset.value;
 
@@ -260,67 +264,95 @@ function bindEvents() {
       btn.classList.add('selected');
 
       updateQuestionsButton();
-    });
+
+      return;
+    }
   });
 
 
-// Кнопка "Продовжити"
-els.continueAfterQuestions.addEventListener('click', async () => {
+  // ==========================================
+  // КНОПКА "ПРОДОВЖИТИ"
+  // ==========================================
 
-  // Якщо не відповіли на обидва питання —
-  // нікуди не переходимо
-  if (!state.hadSugaringBefore || !state.shavedRecently) {
-    return;
-  }
+  els.continueAfterQuestions.addEventListener('click', async () => {
 
-  const btn = els.continueAfterQuestions;
-
-  // Щоб не можна було натиснути кілька разів
-  btn.disabled = true;
-  btn.textContent = 'Зберігаємо...';
-
-  try {
-
-    console.log('Відправляємо відповіді:', {
-      hadSugaringBefore: state.hadSugaringBefore,
-      shavedRecently: state.shavedRecently
-    });
-
-    const result = await apiPost('saveClientAnswers', {
-      initData: state.initData,
-      hadSugaringBefore: state.hadSugaringBefore,
-      shavedRecently: state.shavedRecently
-    });
-
-    console.log('Відповіді збережено:', result);
-
-    if (!result || result.ok !== true) {
-      throw new Error(
-        result?.error || 'Не вдалося зберегти відповіді.'
-      );
+    // Не дозволяємо продовжити без двох відповідей
+    if (!state.hadSugaringBefore || !state.shavedRecently) {
+      return;
     }
 
-    // Тільки після успішного збереження
-    // ховаємо питання і показуємо послуги
-    els.intakeStep.classList.remove('active');
+    const btn = els.continueAfterQuestions;
 
-    openStep('service');
+    btn.disabled = true;
+    btn.textContent = 'Зберігаємо...';
 
-  } catch (err) {
+    try {
 
-    console.error('SAVE CLIENT ANSWERS ERROR:', err);
+      console.log('Відправляємо відповіді:', {
+        hadSugaringBefore: state.hadSugaringBefore,
+        shavedRecently: state.shavedRecently
+      });
 
-    showError(
-      err.message || 'Не вдалося зберегти відповіді.'
-    );
 
-  } finally {
+      // ВІДПРАВЛЯЄМО В APPS SCRIPT
+      const result = await apiPost('saveClientAnswers', {
 
-    btn.disabled = false;
-    btn.textContent = 'Продовжити';
+        initData: state.initData,
 
-  }
-});
+        hadSugaringBefore:
+          state.hadSugaringBefore,
+
+        shavedRecently:
+          state.shavedRecently
+
+      });
+
+
+      console.log(
+        'Відповіді збережено:',
+        result
+      );
+
+
+      if (!result || result.ok !== true) {
+        throw new Error(
+          result?.error ||
+          'Не вдалося зберегти відповіді.'
+        );
+      }
+
+
+      // Якщо все успішно —
+      // ховаємо питання
+      els.intakeStep.classList.remove('active');
+
+
+      // І відкриваємо послуги
+      openStep('service');
+
+
+    } catch (err) {
+
+      console.error(
+        'SAVE CLIENT ANSWERS ERROR:',
+        err
+      );
+
+      showError(
+        err.message ||
+        'Не вдалося зберегти відповіді.'
+      );
+
+
+    } finally {
+
+      btn.disabled = false;
+      btn.textContent = 'Продовжити';
+
+    }
+
+  });
+}
 function updateQuestionsButton() {
   els.continueAfterQuestions.disabled =
     !state.hadSugaringBefore ||
