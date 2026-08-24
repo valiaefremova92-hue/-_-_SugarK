@@ -710,45 +710,16 @@ async function addManualBooking() {
 }
 
 function openStep(name) {
-  if (name === 'intake') {
-    els.intakeStep.classList.add('active');
-
-    ['service', 'date', 'time', 'form'].forEach(step => {
-      const el = $(`step-${step}`);
-      if (el) el.classList.remove('active');
-    });
-
-    setTimeout(() => {
-      els.intakeStep.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-      });
-    }, 50);
-
-    return;
-  }
-
   const order = ['service', 'date', 'time', 'form'];
   const index = order.indexOf(name);
-
   if (index < 0) return;
-
-  els.intakeStep.classList.remove('active');
 
   order.forEach((step, i) => {
     const el = $(`step-${step}`);
-
-    if (el) {
-      el.classList.toggle('active', i <= index);
-    }
+    if (el) el.classList.toggle('active', i <= index);
   });
 
-  setTimeout(() => {
-    $(`step-${name}`)?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start'
-    });
-  }, 50);
+  setTimeout(() => $(`step-${name}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
 }
 
 async function apiPost(action, payload = {}) {
