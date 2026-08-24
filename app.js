@@ -208,22 +208,32 @@ function applyBootstrap(data) {
 function bindEvents() {
   els.prevMonth.addEventListener('click', () => changeMonth(-1));
   els.nextMonth.addEventListener('click', () => changeMonth(1));
+
   els.form.addEventListener('submit', submitBooking);
+
   els.mineBtn.addEventListener('click', loadMyBookings);
-  els.closeMine.addEventListener('click', () => els.myBookingsCard.classList.add('hidden'));
+
+  els.closeMine.addEventListener('click', () => {
+    els.myBookingsCard.classList.add('hidden');
+  });
+
   els.newBooking.addEventListener('click', resetBooking);
+
   els.refreshAdmin.addEventListener('click', loadAdminCalendar);
   els.adminDate.addEventListener('change', loadAdminCalendar);
+
   els.addBlock.addEventListener('click', addBlock);
   els.addManual.addEventListener('click', addManualBooking);
 
-  // Питання для нової клієнтки
-  els.intakeStep.addEventListener('click', event => {
-    const btn = event.target.closest('.option-btn');
 
-    if (!btn) return;
+  // ==========================================
+  // ПИТАННЯ ДЛЯ НОВОЇ КЛІЄНТКИ
+  // ==========================================
 
-    if (els.sugaringOptions.contains(btn)) {
+  // Перше питання — чи робила раніше шугаринг
+  els.sugaringOptions.querySelectorAll('.option-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+
       state.hadSugaringBefore = btn.dataset.value;
 
       els.sugaringOptions
@@ -233,30 +243,14 @@ function bindEvents() {
       btn.classList.add('selected');
 
       updateQuestionsButton();
-      return;
-    }
-
-    if (els.shavingOptions.contains(btn)) {
-      state.shavedRecently = btn.dataset.value;
-
-      els.shavingOptions
-        .querySelectorAll('.option-btn')
-        .forEach(b => b.classList.remove('selected'));
-
-      btn.classList.add('selected');
-
-      updateQuestionsButton();
-    }
+    });
   });
 
-  els.continueAfterQuestions.addEventListener('click', () => {
-    if (!state.hadSugaringBefore || !state.shavedRecently) return;
 
-    openStep('service');
-  });
-
+  // Друге питання — коли була бритва
   els.shavingOptions.querySelectorAll('.option-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+
       state.shavedRecently = btn.dataset.value;
 
       els.shavingOptions
@@ -269,11 +263,26 @@ function bindEvents() {
     });
   });
 
+
+  // Кнопка "Продовжити"
   els.continueAfterQuestions.addEventListener('click', () => {
+
+    // Якщо не відповіли на обидва питання —
+    // нікуди не переходимо
     if (!state.hadSugaringBefore || !state.shavedRecently) {
       return;
     }
 
+    // Зберігаємо відповіді локально в state
+    console.log('Відповіді клієнтки:', {
+      hadSugaringBefore: state.hadSugaringBefore,
+      shavedRecently: state.shavedRecently
+    });
+
+    // Ховаємо блок питань
+    els.intakeStep.classList.remove('active');
+
+    // Показуємо послуги
     openStep('service');
   });
 }
