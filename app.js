@@ -145,7 +145,7 @@ async function init() {
 function applyBootstrap(data) {
   state.user = data.user || state.user;
   state.isMaster = Boolean(data.user?.isMaster);
-   state.isNewClient = Boolean(data.isNewClient);
+   state.isNewClient = Boolean(data.user?.isNewClient);
   const rawServices = Array.isArray(data.services) ? data.services : [];
   state.services = rawServices.map((service, index) => ({
     ...service,
