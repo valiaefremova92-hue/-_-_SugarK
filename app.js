@@ -183,9 +183,10 @@ function applyBootstrap(data) {
   els.heroText.textContent = 'Запишіться у зручний для Вас час';
 
   if (state.settings.logoUrl) {
-    els.logo.src = state.settings.logoUrl;
-    els.logo.classList.remove('hidden');
-  }
+  els.logo.src = state.settings.logoUrl;
+  els.logo.classList.remove('hidden');
+  els.salonName.classList.add('hidden');
+}
 
   const colors = state.settings.colors || {};
   const root = document.documentElement;
