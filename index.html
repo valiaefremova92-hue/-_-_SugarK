@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./style.css?v=20260825-1">
 </head>
 <body>
 <main class="app">
@@ -20,59 +20,76 @@
   </section>
 
   <section id="clientView">
-   <!-- ПИТАННЯ ДЛЯ НОВОЇ КЛІЄНТКИ -->
-<section class="card step" id="step-intake">
-  <div class="step-label">Перед першим записом</div>
-  <h2>Кілька коротких питань 🤍</h2>
-  <p class="hint">Щоб майстер могла краще підготуватися до Вашої процедури.</p>
+   <!-- АНКЕТА НОВОЇ КЛІЄНТКИ -->
+<section class="card step intake-card" id="step-intake">
+  <div class="intake-progress">
+    <div class="intake-progress-top">
+      <span>Коротка анкета</span>
+      <strong><span class="progress-current">1</span> / 2</strong>
+    </div>
+    <div class="progress-track">
+      <span class="progress-fill"></span>
+    </div>
+  </div>
 
-  <div class="question-block">
+  <div class="intake-intro">
+    <span class="intake-icon">🤍</span>
+    <h2>Давайте познайомимось</h2>
+    <p class="hint">Два короткі питання допоможуть майстру підготуватися до Вашого першого візиту.</p>
+  </div>
+
+  <div class="question-block question-one">
+    <span class="question-number">01</span>
     <h3>Чи робили Ви раніше шугаринг?</h3>
 
     <div class="question-options" id="sugaringOptions">
       <button type="button" class="option-btn" data-value="Так">
-        Так
+        <span>Так</span>
+        <span class="option-check">✓</span>
       </button>
 
       <button type="button" class="option-btn" data-value="Ні">
-        Ні
+        <span>Ні</span>
+        <span class="option-check">✓</span>
       </button>
     </div>
   </div>
 
-  <div class="question-block">
+  <div class="question-block question-two">
+    <span class="question-number">02</span>
     <h3>Як давно Ви користувалися бритвою?</h3>
 
     <div class="question-options" id="shavingOptions">
       <button type="button" class="option-btn" data-value="Менше 7 днів тому">
-        Менше 7 днів тому
+        <span>Менше 7 днів тому</span>
+        <span class="option-check">✓</span>
       </button>
 
       <button type="button" class="option-btn" data-value="7–14 днів тому">
-        7–14 днів тому
+        <span>7–14 днів тому</span>
+        <span class="option-check">✓</span>
       </button>
 
       <button type="button" class="option-btn" data-value="2–4 тижні тому">
-        2–4 тижні тому
+        <span>2–4 тижні тому</span>
+        <span class="option-check">✓</span>
       </button>
 
       <button type="button" class="option-btn" data-value="Більше місяця тому">
-        Більше місяця тому
+        <span>Більше місяця тому</span>
+        <span class="option-check">✓</span>
       </button>
 
       <button type="button" class="option-btn" data-value="Не користуюся бритвою">
-        Не користуюся бритвою
+        <span>Не користуюся бритвою</span>
+        <span class="option-check">✓</span>
       </button>
     </div>
   </div>
 
-  <button
-    class="primary-btn"
-    id="continueAfterQuestions"
-    type="button"
-    disabled
-  >
+  <button class="primary-btn intake-continue" id="continueAfterQuestions" type="button" disabled>
     Продовжити
+    <span class="button-arrow">→</span>
   </button>
 </section>
 
